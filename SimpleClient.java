@@ -9,7 +9,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 public class SimpleClient {
-    static final ArrayList<String> serverHosts = new ArrayList<>(Arrays.asList("localhost", "tp-1a201-10.enst.fr", "tp-1a201-11.enst.fr", "tp-1a201-12.enst.fr"));
+    // static final ArrayList<String> serverHosts = new ArrayList<>(Arrays.asList("localhost", "tp-1a201-10.enst.fr", "tp-1a201-11.enst.fr", "tp-1a201-12.enst.fr"));
+    static final ArrayList<String> serverHosts = new ArrayList<>(Arrays.asList("tp-3a101-01.enst.fr", "tp-3a101-10.enst.fr", "tp-3a107-05.enst.fr", "tp-3a107-13.enst.fr", "tp-3a107-14.enst.fr"));
+
 
     static Socket socketOfClient = null;
     static BufferedWriter os = null;
@@ -22,10 +24,12 @@ public class SimpleClient {
         // Server Host
 
         try {
+            String serverNames = String.join(" ", serverHosts);
             for(int i=0; i<serverHosts.size(); ++i) {
                 sockets.add(new Socket(serverHosts.get(i), port));
                 readers.add(new BufferedReader(new InputStreamReader(sockets.get(i).getInputStream())));
                 writers.add(new PrintWriter(new BufferedWriter(new OutputStreamWriter(sockets.get(i).getOutputStream())), true));
+                writers.get(i).println(serverNames);
             }
         } 
         catch (Exception e) {
@@ -45,13 +49,10 @@ public class SimpleClient {
             long linesPerThread = numLines / thread_count;
             long remainingLines = numLines % thread_count;
 
-            // Create a list to hold the results
-            List<String> allLines = new ArrayList<>();
-
             // Create and submit tasks to the thread pool
             for (int i = 0; i < thread_count; i++) {
                 long linesToRead = linesPerThread + (i == 0 ? remainingLines : 0);
-                executor.submit(new FileReaderTask(filename, i * linesPerThread, linesToRead, allLines, i));
+                executor.submit(new FileReaderTask(filename, i * linesPerThread, linesToRead, i));
             }
 
             // Shutdown the executor and wait for all tasks to complete
@@ -60,45 +61,27 @@ public class SimpleClient {
                 // Wait for all tasks to complete
             }
 
-        // try {
-        //     BufferedReader fileReader = new BufferedReader(new FileReader("CC-MAIN-20220116093137-20220116123137-00001.warc.wet"));
-        //     String line;
-        //     int j = 0;
-        //     while ((line = fileReader.readLine()) != null) {
-        //         if (j<serverHosts.size()) {
-        //             writers.get(j).println("START SPLIT");
-        //         }
-        //         j++;
-        //         writers.get(j%serverHosts.size()).println(line);
-        //     }
-        //     for(int i=0; i<serverHosts.size(); ++i) {
-        //         writers.get(i).println("QUIT");
-        //     }
-            
-        //     for(int i=0; i<serverHosts.size(); ++i) {
-        //         sockets.get(i).close();
-        //         readers.get(i).close();
-        //         writers.get(i).close();
-        //     }
-        // } catch (UnknownHostException e) {
-        //     System.err.println("Trying to connect to unknown host: " + e);
-        // } catch (IOException e) {
-        //     System.err.println("IOException:  " + e);
-        // }
+            for(int i=0; i<serverHosts.size(); ++i) {
+                String line = readers.get(i).readLine();
+                if (!line.equals("DONE MAPPING")) {
+                    i--;
+                }
+            }
+
+            System.out.println("Mapping phase is done");
+
         }
     }
     private static class FileReaderTask implements Runnable {
         private final String filename;
         private final long startLine;
         private final long numLines;
-        private final List<String> resultLines;
         private int server;
 
-        public FileReaderTask(String filename, long startLine, long numLines, List<String> resultLines, int server) {
+        public FileReaderTask(String filename, long startLine, long numLines, int server) {
             this.filename = filename;
             this.startLine = startLine;
             this.numLines = numLines;
-            this.resultLines = resultLines;
             this.server = server;
         }
 
@@ -117,6 +100,7 @@ public class SimpleClient {
                         writers.get(server).println(line);
                     }
                 }
+                writers.get(server).println("QUIT MAPPING");
             } catch (IOException e) {
                 e.printStackTrace();
             }
