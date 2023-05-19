@@ -3,14 +3,18 @@ import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 public class SimpleClient {
     // static final ArrayList<String> serverHosts = new ArrayList<>(Arrays.asList("localhost", "tp-1a201-10.enst.fr", "tp-1a201-11.enst.fr", "tp-1a201-12.enst.fr"));
-    static final ArrayList<String> serverHosts = new ArrayList<>(Arrays.asList("tp-3a101-01.enst.fr", "tp-3a101-10.enst.fr", "tp-3a107-05.enst.fr", "tp-3a107-13.enst.fr", "tp-3a107-14.enst.fr"));
+    static final ArrayList<String> serverHosts = new ArrayList<>(Arrays.asList("tp-3a101-01.enst.fr", "tp-3a101-10.enst.fr", "tp-3a107-05.enst.fr")); //, "tp-3a107-13.enst.fr", "tp-3a107-14.enst.fr"));
 
 
     static Socket socketOfClient = null;
@@ -63,13 +67,50 @@ public class SimpleClient {
 
             for(int i=0; i<serverHosts.size(); ++i) {
                 String line = readers.get(i).readLine();
-                if (!line.equals("DONE MAPPING")) {
-                    i--;
+                while (!line.equals("DONE MAPPING")) {
+                    line = readers.get(i).readLine();
                 }
             }
-
             System.out.println("Mapping phase is done");
 
+            for(int i=0; i<serverHosts.size(); ++i) {
+                writers.get(i).println("SHUFFLE");
+            }
+
+            HashMap<String, Integer> wordCounts = new HashMap<>();
+            
+            for(int i=0; i<serverHosts.size(); ++i) {
+                boolean done = false;
+                String word;
+                while (!done) {
+                    word = readers.get(i).readLine();
+                    if (word.equals("QUIT")) {
+                        done = true;
+                    }
+                    else {
+                        String[] tmp = word.split(" ");
+                        wordCounts.put(tmp[0], Integer.parseInt(tmp[1]));
+                    }
+                }
+                // sockets.get(i).close();
+                // readers.get(i).close();
+                // writers.get(i).close();
+            }
+
+            Map<String, Integer> sortedWordCounts = new TreeMap<>(
+                    Comparator.<String, Integer>comparing(wordCounts::get).reversed()
+                            .thenComparing(Comparator.naturalOrder()));
+
+            sortedWordCounts.putAll(wordCounts);
+            System.out.println("the 5 most recurring words are:");
+            int count = 0;
+            for (Map.Entry<String, Integer> entry : sortedWordCounts.entrySet()) {
+                if (count >= 5) {
+                    break;
+                }
+                System.out.println(entry.getKey() + ": " + entry.getValue());
+                count++;
+            }
         }
     }
     private static class FileReaderTask implements Runnable {

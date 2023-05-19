@@ -9,11 +9,24 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.Map;
 
 public class SimpleServerProgram {
 
-    static ArrayList<String> serverNames = new ArrayList<>();
-    static ArrayList<String> words = new ArrayList<>();
+    public static ArrayList<String> serverNames = new ArrayList<>();
+    public static ArrayList<String> words = new ArrayList<>();
+    public static ArrayList<Socket> serverSockets = new ArrayList<>();
+    public static ArrayList<PrintWriter> writers = new ArrayList<>();
+    public static ArrayList<BufferedReader> readers = new ArrayList<>();
+    public static CopyOnWriteArrayList<String> mywords = new CopyOnWriteArrayList<>();
+    public static Map<String, Integer> wordCount = new HashMap<>();
+    public static ArrayList<Socket> tmpSockets = new ArrayList<>();
+    public static ArrayList<BufferedReader> tmpReaders = new ArrayList<>();
+    public static int port = 9990;
     
     public static void main(String args[]) {
 
@@ -29,7 +42,7 @@ public class SimpleServerProgram {
 
     
         try {
-            listener = new ServerSocket(9990);
+            listener = new ServerSocket(port);
         } catch (IOException e) {
             System.out.println(e);
             System.exit(1);
@@ -49,7 +62,10 @@ public class SimpleServerProgram {
             PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter("results.txt")), true);
      
             serverNames = new ArrayList(Arrays.asList(is.readLine().split(" ")));
-
+            for(String name : serverNames) {
+                System.out.print(name + " ");
+            }
+            System.out.println();
 
             while (true) {
                 // Read data to the server (sent from client).
@@ -68,13 +84,149 @@ public class SimpleServerProgram {
                 }
                 
             }
-
+            
+            RecieverFactory recieverFactory = new RecieverFactory(listener);
+            recieverFactory.start();
+            
             os.println("DONE MAPPING");
 
-        } catch (IOException e) {
+            String startShuffle;
+            while (!(startShuffle = is.readLine()).equals("SHUFFLE")) {}
+            System.out.println(startShuffle + " to start shuffle");
+
+            for(int i=0; i<serverNames.size(); ++i) {
+                Socket socket = new Socket(serverNames.get(i), port);
+                serverSockets.add(socket);
+                writers.add(new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())), true));
+                readers.add(new BufferedReader(new InputStreamReader(socket.getInputStream())));
+            }
+
+            System.out.println("STARTED SENDING");
+
+            int n = serverNames.size();
+            long n1 = serverNames.size();
+            System.out.println("size=" + n);
+            System.out.println("size1=" + n1);
+            for(int i=0; i<words.size(); ++i) {
+                int j = words.get(i).hashCode()%n;
+                int tosend = (j>=0)?j:(n+j);
+                writers.get(tosend).println(words.get(i));
+                if (i%100 == 0) {
+                    System.out.println("100 sent");
+                }
+            }
+            System.out.println("DONE SENDING");
+
+            for(int i=0; i<serverNames.size(); ++i) {
+                writers.get(i).println("DONE SHUFFLING");
+            }
+
+            recieverFactory.join();
+
+            for(String word : mywords) {
+                wordCount.put(word, wordCount.getOrDefault(word, 0) + 1);
+            }
+
+            for (Map.Entry<String, Integer> entry : wordCount.entrySet()) {
+                os.println(entry.getKey() + " " + entry.getValue());
+            }
+            os.println("QUIT");
+
+            // for(int i=0; i<serverSockets.size(); ++i) {
+            //     writers.get(i).close();
+            //     readers.get(i).close();
+            //     serverSockets.get(i).close();
+            // }
+            // os.close();
+            // is.close();
+            // listener.close();
+            // socketOfServer.close();
+
+        } catch (Exception e) {
             System.out.println(e);
             e.printStackTrace();
         }
         System.out.println("Sever stopped!");
+    }
+
+    private static class RecieverFactory extends Thread {
+        private ServerSocket serverSocket;
+
+        public RecieverFactory(ServerSocket serverSocket) {
+            this.serverSocket = serverSocket;
+        }
+
+        @Override
+        public void run() {
+            // ExecutorService executor = Executors.newFixedThreadPool(serverNames.size());
+            System.out.println("opened server socket");
+            ArrayList<Thread> tmp = new ArrayList<>();
+            for(int i=0; i<serverNames.size(); ++i) {
+                try {
+                    tmpSockets.add(serverSocket.accept());
+                    tmpReaders.add(new BufferedReader(new InputStreamReader(tmpSockets.get(i).getInputStream())));
+                    System.out.println("started socket " + i);
+                    // executor.submit(new Reciever(i, socket));
+                    tmp.add(new Reciever(i));
+                    tmp.get(i).start();
+
+                } catch (IOException e) {
+                    // TODO Auto-generated catch block
+                    System.out.println("error with socket " +i);
+                    // e.printStackTrace();
+                }
+            }
+            try {
+                // executor.shutdown();
+                // while (!executor.isTerminated()) {
+                //     // Wait for all tasks to complete
+                // }    
+                for(int i=0; i<tmp.size(); ++i) {
+                    tmp.get(i).join();
+                    System.out.println(i+ "terminated");
+                }
+            }
+            catch (Exception e) {
+                System.out.println("error with executor");
+            }
+        }
+    }
+
+    private static class Reciever extends Thread {
+        int id;
+
+        public Reciever(int id) {
+            this.id = id;
+        }
+
+
+        @Override
+        public void run() {
+            try {
+                System.out.println("before opening reader");
+                boolean done = false;
+                long c = 0;
+                while (!done) {
+                    String word;
+                    word = tmpReaders.get(id).readLine();
+                    if (c%100 == 0) {
+                        System.out.println("100 recieved");
+                    }
+                    if (word.equals("DONE SHUFFLING")) {
+                        done = true;
+                    }
+                    else {
+                        mywords.add(word);
+                    }
+                }
+                System.out.println("done getting my words");
+                // reader.close();
+                // socket.close();
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+                // System.out.println("error while reading my words");
+            }
+        }
     }
 }
