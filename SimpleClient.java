@@ -8,14 +8,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 public class SimpleClient {
     // static final ArrayList<String> serverHosts = new ArrayList<>(Arrays.asList("localhost", "tp-1a201-10.enst.fr", "tp-1a201-11.enst.fr", "tp-1a201-12.enst.fr"));
-    static final ArrayList<String> serverHosts = new ArrayList<>(Arrays.asList("tp-3a101-01.enst.fr", "tp-3a101-10.enst.fr", "tp-3a107-05.enst.fr")); //, "tp-3a107-13.enst.fr", "tp-3a107-14.enst.fr"));
+    static final ArrayList<String> serverHosts = new ArrayList<>(Arrays.asList("tp-3a101-01.enst.fr", "tp-3a101-10.enst.fr", "tp-3a107-05.enst.fr", "tp-3a107-13.enst.fr", "tp-3a107-14.enst.fr"));
 
+    static Map<String, Integer> wordCounts = new ConcurrentHashMap<>();
 
     static Socket socketOfClient = null;
     static BufferedWriter os = null;
@@ -76,25 +78,15 @@ public class SimpleClient {
             for(int i=0; i<serverHosts.size(); ++i) {
                 writers.get(i).println("SHUFFLE");
             }
-
-            HashMap<String, Integer> wordCounts = new HashMap<>();
             
+            ArrayList<Gatherer> gatherers = new ArrayList<>();
             for(int i=0; i<serverHosts.size(); ++i) {
-                boolean done = false;
-                String word;
-                while (!done) {
-                    word = readers.get(i).readLine();
-                    if (word.equals("QUIT")) {
-                        done = true;
-                    }
-                    else {
-                        String[] tmp = word.split(" ");
-                        wordCounts.put(tmp[0], Integer.parseInt(tmp[1]));
-                    }
-                }
-                // sockets.get(i).close();
-                // readers.get(i).close();
-                // writers.get(i).close();
+                gatherers.add(new Gatherer(i));
+                gatherers.get(i).start();
+            }
+
+            for(int i=0; i<gatherers.size(); ++i) {
+                gatherers.get(i).join();
             }
 
             Map<String, Integer> sortedWordCounts = new TreeMap<>(
@@ -112,7 +104,11 @@ public class SimpleClient {
                 count++;
             }
         }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
     }
+
     private static class FileReaderTask implements Runnable {
         private final String filename;
         private final long startLine;
@@ -143,6 +139,35 @@ public class SimpleClient {
                 }
                 writers.get(server).println("QUIT MAPPING");
             } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private static class Gatherer extends Thread {
+        private int id;
+
+        public Gatherer(int id) {
+            this.id = id;
+        }
+
+        @Override
+        public void run() {
+            try {
+                boolean done = false;
+                String word;
+                while (!done) {
+                    word = readers.get(id).readLine();
+                    if (word.equals("QUIT")) {
+                        done = true;
+                    }
+                    else {
+                        String[] tmp = word.split(" ");
+                        wordCounts.put(tmp[0], Integer.parseInt(tmp[1]));
+                    }
+                }
+            }
+            catch (Exception e) {
                 e.printStackTrace();
             }
         }
