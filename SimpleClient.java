@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit;
 
 public class SimpleClient {
     // static final ArrayList<String> serverHosts = new ArrayList<>(Arrays.asList("localhost", "tp-1a201-10.enst.fr", "tp-1a201-11.enst.fr", "tp-1a201-12.enst.fr"));
-    static final ArrayList<String> serverHosts = new ArrayList<>(Arrays.asList("tp-3a101-01.enst.fr", "tp-3a101-10.enst.fr", "tp-3a107-05.enst.fr", "tp-3a107-13.enst.fr", "tp-3a107-14.enst.fr"));
+    static final ArrayList<String> serverHosts = new ArrayList<>(Arrays.asList("tp-3a101-01.enst.fr", "tp-3a101-10.enst.fr", "tp-3a107-05.enst.fr", "tp-3a107-13.enst.fr", "tp-3a107-14.enst.fr", "tp-t309-00.enst.fr", "tp-t309-01.enst.fr", "tp-t309-02.enst.fr", "tp-t309-03.enst.fr"));
 
     static Map<String, Integer> wordCounts = new ConcurrentHashMap<>();
 
@@ -89,6 +89,8 @@ public class SimpleClient {
                 gatherers.get(i).join();
             }
 
+            System.out.println("Count Complete");
+
             Map<String, Integer> sortedWordCounts = new TreeMap<>(
                     Comparator.<String, Integer>comparing(wordCounts::get).reversed()
                             .thenComparing(Comparator.naturalOrder()));
@@ -130,13 +132,16 @@ public class SimpleClient {
                     reader.readLine();
                 }
 
+                StringBuilder sb = new StringBuilder();
                 // Read the specified number of lines
                 for (long i = 0; i < numLines; i++) {
                     String line = reader.readLine();
                     if (line != null) {
-                        writers.get(server).println(line);
+                        // writers.get(server).println(line);
+                        sb.append(line).append(System.lineSeparator());
                     }
                 }
+                writers.get(server).println(sb);
                 writers.get(server).println("QUIT MAPPING");
             } catch (IOException e) {
                 e.printStackTrace();
