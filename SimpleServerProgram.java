@@ -107,13 +107,19 @@ public class SimpleServerProgram {
             long n1 = serverNames.size();
             System.out.println("size=" + n);
             System.out.println("size1=" + n1);
+            ArrayList<ArrayList<String>> data = new ArrayList<>();
+            for(int i=0; i<n; ++i) {
+                data.add(new ArrayList<>());
+            } 
             for(int i=0; i<words.size(); ++i) {
                 int j = words.get(i).hashCode()%n;
                 int tosend = (j>=0)?j:(n+j);
-                writers.get(tosend).println(words.get(i));
-                if (i%100 == 0) {
-                    System.out.println("100 sent");
-                }
+                // writers.get(tosend).println(words.get(i));
+                data.get(tosend).add(words.get(i));
+            }
+            System.out.println("DONE ASSEMBLING");
+            for(int i=0; i<n; ++i) {
+                writers.get(i).println(String.join(" ", data.get(i)));
             }
             System.out.println("DONE SENDING");
 
@@ -209,14 +215,14 @@ public class SimpleServerProgram {
                 while (!done) {
                     String word;
                     word = tmpReaders.get(id).readLine();
-                    if (c%100 == 0) {
-                        System.out.println("100 recieved");
-                    }
+                    // if (c%100 == 0) {
+                    //     System.out.println("100 recieved");
+                    // }
                     if (word.equals("DONE SHUFFLING")) {
                         done = true;
                     }
                     else {
-                        mywords.add(word);
+                        mywords.addAll(new ArrayList(Arrays.asList(word.split(" "))));
                     }
                 }
                 System.out.println("done getting my words");
