@@ -93,11 +93,18 @@ public class SimpleServerProgram {
 
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
-            byte[] buffer = new byte[8192];
+            int size = Integer.parseInt(is.readLine());
+            System.out.println("size = " + size);
+            byte[] buffer = new byte[8912];
             int bytesRead;
-            while ((bytesRead = inputStream.read(buffer)) != -1) {
+            int numBytes = 0;
+            while (numBytes < size) {
+                bytesRead = inputStream.read(buffer);
+                numBytes += bytesRead;
                 outputStream.write(buffer, 0, bytesRead);
             }
+            
+            System.out.println(numBytes);
 
             System.out.println("5alast recieve");
             // Transform the received binary data into a string

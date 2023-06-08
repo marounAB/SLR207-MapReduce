@@ -48,8 +48,11 @@ public class SimpleClient {
 
         // String filename = "CC-MAIN-20220116093137-20220116123137-00001.warc.wet";
 
+        int thread_count = serverHosts.size();
         String filename = "./Files/file1.wet";
         File file = new File(filename);
+
+        ExecutorService executor = Executors.newFixedThreadPool(thread_count);
 
         try (FileChannel fileChannel = new RandomAccessFile(file, "r").getChannel()) {
             long fileSize = fileChannel.size();
@@ -69,18 +72,7 @@ public class SimpleClient {
             System.out.println("File read successfully.");
 
             for(int i=0; i<bwriters.size(); ++i) {
-                // final int j = i;
-                // Thread thread = new Thread(() -> {
-                //     try {
-                //     }
-                //     catch (Exception e) {
-                        
-                //     }
-                // });
-                bwriters.get(i).write(fileBytes);
-                // writers.get(i).println("QUIT MAPPING");
-                System.out.println("ba3atto la " + i);
-                // thread.start();
+                executor.submit(new Sender(i, fileBytes));
             }
 
             for(int i=0; i<serverHosts.size(); ++i) {
@@ -89,6 +81,19 @@ public class SimpleClient {
                     line = readers.get(i).readLine();
                 }
             }
+
+            executor.shutdown();
+            while (!executor.isTerminated()) {
+                // Wait for all tasks to complete
+            }
+
+            for(int i=0; i<serverHosts.size(); ++i) {
+                String line = readers.get(i).readLine();
+                while (!line.equals("DONE MAPPING")) {
+                    line = readers.get(i).readLine();
+                }
+            }
+
             System.out.println("Mapping phase is done");
 
             for(int i=0; i<serverHosts.size(); ++i) {
@@ -124,6 +129,31 @@ public class SimpleClient {
         }
         catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    private static class Sender implements Runnable {
+        private int i;
+        private byte[] fileBytes;
+
+        public Sender(int i, byte[] fileBytes) {
+            this.i = i;
+            this.fileBytes = fileBytes;
+        }
+
+        @Override
+        public void run() {
+            try {
+                System.out.println(fileBytes.length);
+                writers.get(i).println(fileBytes.length);
+                bwriters.get(i).write(fileBytes);
+                bwriters.get(i).close();
+                // writers.get(i).println("QUIT MAPPING");
+                System.out.println("ba3atto la " + i);
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 
