@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
 public class SimpleClient {
-    static final ArrayList<String> serverHosts = new ArrayList<>(Arrays.asList("tp-1a201-04.enst.fr", "tp-1a201-01.enst.fr", "tp-1a201-02.enst.fr", "tp-1a201-03.enst.fr", "tp-1a201-05.enst.fr", "tp-1a201-07.enst.fr", "tp-1a201-08.enst.fr"));
+    static final ArrayList<String> serverHosts = new ArrayList<>(Arrays.asList("tp-1a201-04.enst.fr", "tp-1a201-01.enst.fr", "tp-1a201-02.enst.fr", "tp-1a201-03.enst.fr", "tp-1a201-05.enst.fr", "tp-1a201-07.enst.fr", "tp-1a201-08.enst.fr", "tp-1a201-09.enst.fr", "tp-1a201-10.enst.fr", "tp-1a201-11.enst.fr"));
     // static final ArrayList<String> serverHosts = new ArrayList<>(Arrays.asList("tp-3a101-01.enst.fr", "tp-3a101-10.enst.fr", "tp-3a107-05.enst.fr", "tp-3a107-13.enst.fr", "tp-3a107-14.enst.fr")); //, "tp-t309-00.enst.fr", "tp-t309-01.enst.fr", "tp-t309-02.enst.fr", "tp-t309-03.enst.fr"));
 
     static Map<String, Integer> wordCounts = new ConcurrentHashMap<>();
@@ -159,7 +159,17 @@ public class SimpleClient {
                 // writers.get(server).println("QUIT MAPPING");
                 writers.get(server).close();
                 bwriters.get(server).close();
-                sockets.set(server, new Socket(serverHosts.get(server), port));
+                boolean connected = false;
+                while (!connected) {
+                    try {
+                        sockets.set(server, new Socket(serverHosts.get(server), port));
+                        connected = true;
+                    }
+                    catch (Exception e) {
+                        Thread.sleep(1000);
+                    }
+
+                }
                 readers.set(server, new BufferedReader(new InputStreamReader(sockets.get(server).getInputStream())));
                 writers.set(server, new PrintWriter(new BufferedWriter(new OutputStreamWriter(sockets.get(server).getOutputStream())), true));
             } catch (IOException e) {
