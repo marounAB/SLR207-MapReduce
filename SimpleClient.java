@@ -149,6 +149,7 @@ public class SimpleClient {
                 for(int i=0; i<numLines; ++i) {
                     toSend[i] = fileBytes[startLine+i];
                 }
+                writers.get(server).println(numLines);
                 bwriters.get(server).write(toSend);
                 bwriters.get(server).flush();
                 System.out.println("ba3at l " + server);

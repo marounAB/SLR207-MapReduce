@@ -1,12 +1,15 @@
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.ByteArrayOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -33,6 +36,7 @@ public class SimpleServerProgram {
         ServerSocket listener = null;
         String line;
         BufferedReader is;
+        InputStream inputStream;
         PrintWriter os;
         Socket socketOfServer = null;
 
@@ -58,6 +62,7 @@ public class SimpleServerProgram {
 
             // Open input and output streams
             is = new BufferedReader(new InputStreamReader(socketOfServer.getInputStream()));
+            inputStream = socketOfServer.getInputStream();
             os = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socketOfServer.getOutputStream())), true);
             PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter("results.txt")), true);
      
@@ -67,24 +72,36 @@ public class SimpleServerProgram {
             }
             System.out.println();
 
-            while (true) {
-                // Read data to the server (sent from client).
-                line = is.readLine();
-                // If users send QUIT (To end conversation).
-                if (line.equals("QUIT MAPPING")) {
-                    break;
-                }
-                line = line.replaceAll("\\p{Punct}", "").toLowerCase();
-            
-                // split the line into words and update the word counts
-                String[] tmp = line.split("\\s+");
-                for (String word : tmp) {
-                    words.add(word);
-                    writer.println(word);
-                }
-                
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+            int size = Integer.parseInt(is.readLine());
+            System.out.println("size = " + size);
+            byte[] buffer = new byte[8912];
+            int bytesRead;
+            int numBytes = 0;
+            while (numBytes < size) {
+                bytesRead = inputStream.read(buffer);
+                numBytes += bytesRead;
+                outputStream.write(buffer, 0, bytesRead);
             }
             
+            System.out.println(numBytes);
+
+            System.out.println("5alast recieve");
+            // Transform the received binary data into a string
+            String receivedString = new String(outputStream.toByteArray(), StandardCharsets.UTF_8);
+            String[] lines = receivedString.split("\\r?\\n");
+            for(String line1: lines) {
+                line1 = line1.replaceAll("\\p{Punct}", "").toLowerCase();
+            
+                // split the line into words and update the word counts
+                String[] tmp = line1.split("\\s+");
+                for (String word : tmp) {
+                    words.add(word);
+                    // writer.println(word);
+                }
+            }
+
             RecieverFactory recieverFactory = new RecieverFactory(listener);
             recieverFactory.start();
             
