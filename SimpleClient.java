@@ -1,5 +1,7 @@
 import java.io.*;
 import java.net.*;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -12,10 +14,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 
 public class SimpleClient {
-    // static final ArrayList<String> serverHosts = new ArrayList<>(Arrays.asList("localhost", "tp-1a201-10.enst.fr", "tp-1a201-11.enst.fr", "tp-1a201-12.enst.fr"));
-    static final ArrayList<String> serverHosts = new ArrayList<>(Arrays.asList("tp-3a101-01.enst.fr", "tp-3a101-10.enst.fr", "tp-3a107-05.enst.fr", "tp-3a107-13.enst.fr", "tp-3a107-14.enst.fr", "tp-t309-00.enst.fr", "tp-t309-01.enst.fr", "tp-t309-02.enst.fr", "tp-t309-03.enst.fr"));
+    static final ArrayList<String> serverHosts = new ArrayList<>(Arrays.asList("tp-1a201-04.enst.fr", "tp-1a201-01.enst.fr", "tp-1a201-02.enst.fr", "tp-1a201-03.enst.fr"));
+    // static final ArrayList<String> serverHosts = new ArrayList<>(Arrays.asList("tp-3a101-01.enst.fr", "tp-3a101-10.enst.fr", "tp-3a107-05.enst.fr", "tp-3a107-13.enst.fr", "tp-3a107-14.enst.fr")); //, "tp-t309-00.enst.fr", "tp-t309-01.enst.fr", "tp-t309-02.enst.fr", "tp-t309-03.enst.fr"));
 
     static Map<String, Integer> wordCounts = new ConcurrentHashMap<>();
 
@@ -25,6 +28,7 @@ public class SimpleClient {
     static ArrayList<Socket> sockets = new ArrayList<>();
     static ArrayList<BufferedReader> readers = new ArrayList<>();
     static ArrayList<PrintWriter> writers = new ArrayList<>();
+    static ArrayList<BufferedOutputStream> bwriters = new ArrayList<>();
     static int port = 9990;
     public static void main(String[] args) throws FileNotFoundException, IOException {
         // Server Host
@@ -35,6 +39,7 @@ public class SimpleClient {
                 sockets.add(new Socket(serverHosts.get(i), port));
                 readers.add(new BufferedReader(new InputStreamReader(sockets.get(i).getInputStream())));
                 writers.add(new PrintWriter(new BufferedWriter(new OutputStreamWriter(sockets.get(i).getOutputStream())), true));
+                bwriters.add(new BufferedOutputStream(sockets.get(i).getOutputStream()));
                 writers.get(i).println(serverNames);
             }
         } 
@@ -43,22 +48,35 @@ public class SimpleClient {
         }
 
         int thread_count = serverHosts.size();
-        String filename = "CC-MAIN-20220116093137-20220116123137-00001.warc.wet";
+        // String filename = "CC-MAIN-20220116093137-20220116123137-00001.warc.wet";
+        String filename = "./Files/file1.wet";
+        File file = new File(filename);
 
         ExecutorService executor = Executors.newFixedThreadPool(thread_count);
 
-        try (BufferedReader reader = new BufferedReader(new FileReader(filename))) {
+        try (FileChannel fileChannel = new RandomAccessFile(file, "r").getChannel()) {
+            long fileSize = fileChannel.size();
+
+            // Memory-map the file for reading
+            MappedByteBuffer buffer = fileChannel.map(FileChannel.MapMode.READ_ONLY, 0, fileSize);
+
+            // Create a byte array to hold the file data
+            byte[] fileBytes = new byte[(int) fileSize];
+
+            // Transfer the data from the buffer to the byte array
+            buffer.get(fileBytes);
+
             // Determine the number of lines in the file
-            long numLines = reader.lines().count();
+            int numLines = fileBytes.length;
 
             // Calculate the number of lines to be read by each thread
-            long linesPerThread = numLines / thread_count;
-            long remainingLines = numLines % thread_count;
+            int linesPerThread = numLines / thread_count;
+            int remainingLines = numLines % thread_count;
 
             // Create and submit tasks to the thread pool
             for (int i = 0; i < thread_count; i++) {
-                long linesToRead = linesPerThread + (i == 0 ? remainingLines : 0);
-                executor.submit(new FileReaderTask(filename, i * linesPerThread, linesToRead, i));
+                int linesToRead = linesPerThread + (i == thread_count-1 ? remainingLines : 0);
+                executor.submit(new FileReaderTask(fileBytes, i * linesPerThread, linesToRead, i));
             }
 
             // Shutdown the executor and wait for all tasks to complete
@@ -112,13 +130,13 @@ public class SimpleClient {
     }
 
     private static class FileReaderTask implements Runnable {
-        private final String filename;
-        private final long startLine;
-        private final long numLines;
+        private final byte[] fileBytes;
+        private final int startLine;
+        private final int numLines;
         private int server;
 
-        public FileReaderTask(String filename, long startLine, long numLines, int server) {
-            this.filename = filename;
+        public FileReaderTask(byte[] fileBytes, int startLine, int numLines, int server) {
+            this.fileBytes = fileBytes;
             this.startLine = startLine;
             this.numLines = numLines;
             this.server = server;
@@ -126,22 +144,15 @@ public class SimpleClient {
 
         @Override
         public void run() {
-            try (BufferedReader reader = new BufferedReader(new FileReader(filename))) {
-                // Skip lines until the starting line
-                for (long i = 0; i < startLine; i++) {
-                    reader.readLine();
+            try {
+                byte[] toSend = new byte[numLines];
+                for(int i=0; i<numLines; ++i) {
+                    toSend[i] = fileBytes[startLine+i];
                 }
-
-                StringBuilder sb = new StringBuilder();
-                // Read the specified number of lines
-                for (long i = 0; i < numLines; i++) {
-                    String line = reader.readLine();
-                    if (line != null) {
-                        // writers.get(server).println(line);
-                        sb.append(line).append(System.lineSeparator());
-                    }
-                }
-                writers.get(server).println(sb);
+                bwriters.get(server).write(toSend);
+                bwriters.get(server).flush();
+                System.out.println("ba3at l " + server);
+                writers.get(server).println();
                 writers.get(server).println("QUIT MAPPING");
             } catch (IOException e) {
                 e.printStackTrace();
