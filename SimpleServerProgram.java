@@ -79,12 +79,16 @@ public class SimpleServerProgram {
             byte[] buffer = new byte[8912];
             int bytesRead;
             int numBytes = 0;
-            while (numBytes < size) {
-                bytesRead = inputStream.read(buffer);
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
                 numBytes += bytesRead;
                 outputStream.write(buffer, 0, bytesRead);
             }
             
+            // Thread.sleep(10000);
+
+            is = new BufferedReader(new InputStreamReader(socketOfServer.getInputStream()));
+            inputStream = socketOfServer.getInputStream();
+
             System.out.println(numBytes);
 
             System.out.println("5alast recieve");
@@ -105,9 +109,18 @@ public class SimpleServerProgram {
             RecieverFactory recieverFactory = new RecieverFactory(listener);
             recieverFactory.start();
             
+            
+            socketOfServer = listener.accept();
+            System.out.println("Accept a client!");
+            
+            // Open input and output streams
+            is = new BufferedReader(new InputStreamReader(socketOfServer.getInputStream()));
+            inputStream = socketOfServer.getInputStream();
+            os = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socketOfServer.getOutputStream())), true);
+            
             os.println("DONE MAPPING");
-
             String startShuffle;
+            // while ((startShuffle = is.readLine()) == null) {}
             while (!(startShuffle = is.readLine()).equals("SHUFFLE")) {}
             System.out.println(startShuffle + " to start shuffle");
 
