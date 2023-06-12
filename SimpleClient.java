@@ -154,24 +154,26 @@ public class SimpleClient {
                 writers.get(server).println(numLines);
                 bwriters.get(server).write(toSend);
                 bwriters.get(server).flush();
-                System.out.println("ba3at l " + server);
                 // writers.get(server).println();
                 // writers.get(server).println("QUIT MAPPING");
                 writers.get(server).close();
                 bwriters.get(server).close();
-                boolean connected = false;
-                while (!connected) {
+                // boolean connected = false;
+                sockets.set(server, null);
+                Thread.sleep(5000);
+                while (sockets.get(server) == null) {
                     try {
                         sockets.set(server, new Socket(serverHosts.get(server), port));
-                        connected = true;
+                        readers.set(server, new BufferedReader(new InputStreamReader(sockets.get(server).getInputStream())));
+                        writers.set(server, new PrintWriter(new BufferedWriter(new OutputStreamWriter(sockets.get(server).getOutputStream())), true));
+                        // connected = true;
                     }
                     catch (Exception e) {
                         Thread.sleep(1000);
                     }
-
+                    
                 }
-                readers.set(server, new BufferedReader(new InputStreamReader(sockets.get(server).getInputStream())));
-                writers.set(server, new PrintWriter(new BufferedWriter(new OutputStreamWriter(sockets.get(server).getOutputStream())), true));
+                System.out.println("ba3at l " + server);
             } catch (IOException e) {
                 e.printStackTrace();
             }

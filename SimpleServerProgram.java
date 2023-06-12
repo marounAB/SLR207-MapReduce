@@ -106,10 +106,6 @@ public class SimpleServerProgram {
                 }
             }
 
-            RecieverFactory recieverFactory = new RecieverFactory(listener);
-            recieverFactory.start();
-            
-            
             socketOfServer = listener.accept();
             System.out.println("Accept a client!");
             
@@ -117,6 +113,9 @@ public class SimpleServerProgram {
             is = new BufferedReader(new InputStreamReader(socketOfServer.getInputStream()));
             inputStream = socketOfServer.getInputStream();
             os = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socketOfServer.getOutputStream())), true);
+            
+            RecieverFactory recieverFactory = new RecieverFactory(listener);
+            recieverFactory.start();
             
             os.println("DONE MAPPING");
             String startShuffle;
