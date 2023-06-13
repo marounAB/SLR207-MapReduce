@@ -74,11 +74,10 @@ public class SimpleServerProgram {
 
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
-            int size = Integer.parseInt(is.readLine());
-            System.out.println("size = " + size);
             byte[] buffer = new byte[8912];
             int bytesRead;
             int numBytes = 0;
+            System.out.println("ballach recieve");
             while ((bytesRead = inputStream.read(buffer)) != -1) {
                 numBytes += bytesRead;
                 outputStream.write(buffer, 0, bytesRead);
@@ -95,6 +94,7 @@ public class SimpleServerProgram {
             // Transform the received binary data into a string
             String receivedString = new String(outputStream.toByteArray(), StandardCharsets.UTF_8);
             String[] lines = receivedString.split("\\r?\\n");
+            receivedString = null;
             for(String line1: lines) {
                 line1 = line1.replaceAll("\\p{Punct}", "").toLowerCase();
             
@@ -105,6 +105,8 @@ public class SimpleServerProgram {
                     // writer.println(word);
                 }
             }
+
+            lines = null;
 
             socketOfServer = listener.accept();
             System.out.println("Accept a client!");
@@ -146,6 +148,7 @@ public class SimpleServerProgram {
                 // writers.get(tosend).println(words.get(i));
                 data.get(tosend).add(words.get(i));
             }
+            words = null;
             System.out.println("DONE ASSEMBLING");
             for(int i=0; i<n; ++i) {
                 writers.get(i).println(String.join(" ", data.get(i)));

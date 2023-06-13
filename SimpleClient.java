@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
 public class SimpleClient {
-    static final ArrayList<String> serverHosts = new ArrayList<>(Arrays.asList("tp-1a201-04.enst.fr", "tp-1a201-01.enst.fr", "tp-1a201-02.enst.fr", "tp-1a201-03.enst.fr", "tp-1a201-05.enst.fr", "tp-1a201-07.enst.fr", "tp-1a201-08.enst.fr", "tp-1a201-09.enst.fr", "tp-1a201-10.enst.fr", "tp-1a201-11.enst.fr"));
+    static final ArrayList<String> serverHosts = new ArrayList<>(Arrays.asList("tp-1a201-04.enst.fr", "tp-1a201-01.enst.fr", "tp-1a201-02.enst.fr", "tp-1a201-03.enst.fr", "tp-1a201-05.enst.fr", "tp-1a201-07.enst.fr", "tp-1a201-08.enst.fr", "tp-1a201-09.enst.fr", "tp-1a201-10.enst.fr", "tp-1a201-11.enst.fr"); //, "tp-1a201-12.enst.fr"));
     // static final ArrayList<String> serverHosts = new ArrayList<>(Arrays.asList("tp-3a101-01.enst.fr", "tp-3a101-10.enst.fr", "tp-3a107-05.enst.fr", "tp-3a107-13.enst.fr", "tp-3a107-14.enst.fr")); //, "tp-t309-00.enst.fr", "tp-t309-01.enst.fr", "tp-t309-02.enst.fr", "tp-t309-03.enst.fr"));
 
     static Map<String, Integer> wordCounts = new ConcurrentHashMap<>();
@@ -73,10 +73,13 @@ public class SimpleClient {
             int linesPerThread = numLines / thread_count;
             int remainingLines = numLines % thread_count;
 
+            BufferedReader fileReader = new BufferedReader(new FileReader("filenames.txt"));
             // Create and submit tasks to the thread pool
             for (int i = 0; i < thread_count; i++) {
+                ArrayList<String> tmp = new ArrayList<>();
+                tmp.add(fileReader.readLine());
                 int linesToRead = linesPerThread + (i == thread_count-1 ? remainingLines : 0);
-                executor.submit(new FileReaderTask(fileBytes, i * linesPerThread, linesToRead, i));
+                executor.submit(new FileReaderTask(tmp, i));
             }
 
             // Shutdown the executor and wait for all tasks to complete
@@ -132,27 +135,49 @@ public class SimpleClient {
     }
 
     private static class FileReaderTask implements Runnable {
-        private final byte[] fileBytes;
+        // private final byte[] fileBytes;
         private final int startLine;
         private final int numLines;
         private int server;
+        private ArrayList<String> filenames = new ArrayList<>();
 
         public FileReaderTask(byte[] fileBytes, int startLine, int numLines, int server) {
-            this.fileBytes = fileBytes;
+            // this.fileBytes = fileBytes;
             this.startLine = startLine;
             this.numLines = numLines;
+            this.server = server;
+        }
+
+        public FileReaderTask(ArrayList<String> filenames, int server) {
+            this.filenames.addAll(filenames);
+            this.startLine = 0;
+            this.numLines = 0;
             this.server = server;
         }
 
         @Override
         public void run() {
             try {
-                byte[] toSend = new byte[numLines];
-                for(int i=0; i<numLines; ++i) {
-                    toSend[i] = fileBytes[startLine+i];
+                for(String filename : filenames) {
+                    File file = new File(filename);
+
+                    try (FileChannel fileChannel = new RandomAccessFile(file, "r").getChannel()) {
+                        long fileSize = fileChannel.size();
+
+                        // Memory-map the file for reading
+                        MappedByteBuffer buffer = fileChannel.map(FileChannel.MapMode.READ_ONLY, 0, fileSize);
+
+                        // Create a byte array to hold the file data
+                        byte[] fileBytes = new byte[(int) fileSize];
+
+                        // Transfer the data from the buffer to the byte array
+                        buffer.get(fileBytes);
+
+                        bwriters.get(server).write(fileBytes);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                 }
-                writers.get(server).println(numLines);
-                bwriters.get(server).write(toSend);
                 bwriters.get(server).flush();
                 // writers.get(server).println();
                 // writers.get(server).println("QUIT MAPPING");
