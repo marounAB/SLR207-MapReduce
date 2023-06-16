@@ -32,13 +32,14 @@ public class SimpleServerProgram {
     public static int port = 9990;
     
     public static void main(String args[]) {
-
-        ServerSocket listener = null;
+        
+        ServerSocket[] listener = new ServerSocket[1];
         String line;
         BufferedReader is;
         InputStream inputStream;
         PrintWriter os;
         Socket socketOfServer = null;
+        Socket[] newSocket = new Socket[1];
 
         // Try to open a server socket on port 9999
         // Note that we can't choose a port less than 1023 if we are not
@@ -46,7 +47,7 @@ public class SimpleServerProgram {
 
     
         try {
-            listener = new ServerSocket(port);
+            listener[0] = new ServerSocket(port);
         } catch (IOException e) {
             System.out.println(e);
             System.exit(1);
@@ -56,16 +57,29 @@ public class SimpleServerProgram {
             System.out.println("Server is waiting to accept user...");
 
             // Accept client connection request
-            // Get new Socket at Server.    
-            socketOfServer = listener.accept();
+            // Get new Socket at Server.   
+            socketOfServer = listener[0].accept();
             System.out.println("Accept a client!");
-
+            
             // Open input and output streams
             is = new BufferedReader(new InputStreamReader(socketOfServer.getInputStream()));
             inputStream = socketOfServer.getInputStream();
             os = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socketOfServer.getOutputStream())), true);
             PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter("results.txt")), true);
      
+            Thread thread = new Thread() {
+                @Override
+                public void run() {
+                    try {
+                        newSocket[0] = listener[0].accept();
+                        System.out.println("Accept a client!");
+                    }
+                    catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            };
+            thread.start();
             serverNames = new ArrayList(Arrays.asList(is.readLine().split(" ")));
             for(String name : serverNames) {
                 System.out.print(name + " ");
@@ -97,7 +111,7 @@ public class SimpleServerProgram {
             receivedString = null;
             for(String line1: lines) {
                 line1 = line1.replaceAll("\\p{Punct}", "").toLowerCase();
-            
+                
                 // split the line into words and update the word counts
                 String[] tmp = line1.split("\\s+");
                 for (String word : tmp) {
@@ -105,18 +119,25 @@ public class SimpleServerProgram {
                     // writer.println(word);
                 }
             }
-
+            
             lines = null;
 
-            socketOfServer = listener.accept();
-            System.out.println("Accept a client!");
+            // socketOfServer = listener.accept();
+            // System.out.println("Accept a client!");
             
+            // // Open input and output streams
+            // is = new BufferedReader(new InputStreamReader(socketOfServer.getInputStream()));
+            // inputStream = socketOfServer.getInputStream();
+            // os = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socketOfServer.getOutputStream())), true);
+            
+            thread.join();
             // Open input and output streams
-            is = new BufferedReader(new InputStreamReader(socketOfServer.getInputStream()));
-            inputStream = socketOfServer.getInputStream();
-            os = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socketOfServer.getOutputStream())), true);
+            is = new BufferedReader(new InputStreamReader(newSocket[0].getInputStream()));
+            inputStream = newSocket[0].getInputStream();
+            os = new PrintWriter(new BufferedWriter(new OutputStreamWriter(newSocket[0].getOutputStream())), true);
+            // PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter("results.txt")), true);
             
-            RecieverFactory recieverFactory = new RecieverFactory(listener);
+            RecieverFactory recieverFactory = new RecieverFactory(listener[0]);
             recieverFactory.start();
             
             os.println("DONE MAPPING");

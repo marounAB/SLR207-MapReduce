@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
 public class SimpleClient {
-    static final ArrayList<String> serverHosts = new ArrayList<>(Arrays.asList("tp-1a201-04.enst.fr", "tp-1a201-01.enst.fr", "tp-1a201-02.enst.fr", "tp-1a201-03.enst.fr", "tp-1a201-05.enst.fr", "tp-1a201-07.enst.fr", "tp-1a201-08.enst.fr", "tp-1a201-09.enst.fr", "tp-1a201-10.enst.fr", "tp-1a201-11.enst.fr"); //, "tp-1a201-12.enst.fr"));
+    static final ArrayList<String> serverHosts = new ArrayList<>(Arrays.asList("tp-1a201-04.enst.fr", "tp-1a201-01.enst.fr", "tp-1a201-02.enst.fr", "tp-1a201-03.enst.fr", "tp-1a201-05.enst.fr", "tp-1a201-06.enst.fr", "tp-1a201-08.enst.fr", "tp-1a201-09.enst.fr", "tp-1a201-10.enst.fr", "tp-1a201-11.enst.fr", "tp-1a201-12.enst.fr", "tp-1a201-13.enst.fr"));
     // static final ArrayList<String> serverHosts = new ArrayList<>(Arrays.asList("tp-3a101-01.enst.fr", "tp-3a101-10.enst.fr", "tp-3a107-05.enst.fr", "tp-3a107-13.enst.fr", "tp-3a107-14.enst.fr")); //, "tp-t309-00.enst.fr", "tp-t309-01.enst.fr", "tp-t309-02.enst.fr", "tp-t309-03.enst.fr"));
 
     static Map<String, Integer> wordCounts = new ConcurrentHashMap<>();
@@ -55,30 +55,30 @@ public class SimpleClient {
         ExecutorService executor = Executors.newFixedThreadPool(thread_count);
 
         try (FileChannel fileChannel = new RandomAccessFile(file, "r").getChannel()) {
-            long fileSize = fileChannel.size();
+            // long fileSize = fileChannel.size();
 
-            // Memory-map the file for reading
-            MappedByteBuffer buffer = fileChannel.map(FileChannel.MapMode.READ_ONLY, 0, fileSize);
+            // // Memory-map the file for reading
+            // MappedByteBuffer buffer = fileChannel.map(FileChannel.MapMode.READ_ONLY, 0, fileSize);
 
-            // Create a byte array to hold the file data
-            byte[] fileBytes = new byte[(int) fileSize];
+            // // Create a byte array to hold the file data
+            // byte[] fileBytes = new byte[(int) fileSize];
 
-            // Transfer the data from the buffer to the byte array
-            buffer.get(fileBytes);
+            // // Transfer the data from the buffer to the byte array
+            // buffer.get(fileBytes);
 
             // Determine the number of lines in the file
-            int numLines = fileBytes.length;
+            // int numLines = fileBytes.length;
 
-            // Calculate the number of lines to be read by each thread
-            int linesPerThread = numLines / thread_count;
-            int remainingLines = numLines % thread_count;
+            // // Calculate the number of lines to be read by each thread
+            // int linesPerThread = numLines / thread_count;
+            // int remainingLines = numLines % thread_count;
 
             BufferedReader fileReader = new BufferedReader(new FileReader("filenames.txt"));
             // Create and submit tasks to the thread pool
             for (int i = 0; i < thread_count; i++) {
                 ArrayList<String> tmp = new ArrayList<>();
                 tmp.add(fileReader.readLine());
-                int linesToRead = linesPerThread + (i == thread_count-1 ? remainingLines : 0);
+                // int linesToRead = linesPerThread + (i == thread_count-1 ? remainingLines : 0);
                 executor.submit(new FileReaderTask(tmp, i));
             }
 
@@ -186,7 +186,7 @@ public class SimpleClient {
                 // boolean connected = false;
                 sockets.set(server, null);
                 Thread.sleep(5000);
-                while (sockets.get(server) == null) {
+                // while (sockets.get(server) == null) {
                     try {
                         sockets.set(server, new Socket(serverHosts.get(server), port));
                         readers.set(server, new BufferedReader(new InputStreamReader(sockets.get(server).getInputStream())));
@@ -194,10 +194,10 @@ public class SimpleClient {
                         // connected = true;
                     }
                     catch (Exception e) {
-                        Thread.sleep(1000);
+                        // Thread.sleep(1000);
                     }
                     
-                }
+                // }
                 System.out.println("ba3at l " + server);
             } catch (IOException e) {
                 e.printStackTrace();
