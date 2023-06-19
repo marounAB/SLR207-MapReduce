@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
 public class SimpleClient {
-    static final ArrayList<String> serverHosts = new ArrayList<>(Arrays.asList("tp-1a201-04.enst.fr", "tp-1a201-14.enst.fr", "tp-1a201-24.enst.fr", "tp-1a201-03.enst.fr")); //, "tp-1a201-05.enst.fr", "tp-1a201-06.enst.fr")); //, "tp-1a201-08.enst.fr", "tp-1a201-09.enst.fr", "tp-1a201-10.enst.fr", "tp-1a201-11.enst.fr", "tp-1a201-12.enst.fr", "tp-1a201-13.enst.fr"));
+    static final ArrayList<String> serverHosts = new ArrayList<>(Arrays.asList("tp-1a201-04.enst.fr", "tp-1a201-14.enst.fr", "tp-1a201-24.enst.fr", "tp-1a201-03.enst.fr", "tp-1a201-05.enst.fr", "tp-1a201-06.enst.fr", "tp-1a201-08.enst.fr", "tp-1a201-09.enst.fr", "tp-1a201-10.enst.fr", "tp-1a201-11.enst.fr", "tp-1a201-12.enst.fr", "tp-1a201-13.enst.fr"));
     // static final ArrayList<String> serverHosts = new ArrayList<>(Arrays.asList("tp-3a101-01.enst.fr", "tp-3a101-10.enst.fr", "tp-3a107-05.enst.fr", "tp-3a107-13.enst.fr", "tp-3a107-14.enst.fr")); //, "tp-t309-00.enst.fr", "tp-t309-01.enst.fr", "tp-t309-02.enst.fr", "tp-t309-03.enst.fr"));
 
     static Map<String, Integer> wordCounts = new ConcurrentHashMap<>();
@@ -75,7 +75,7 @@ public class SimpleClient {
             // int linesPerThread = numLines / thread_count;
             // int remainingLines = numLines % thread_count;
 
-            BufferedReader fileReader = new BufferedReader(new FileReader("filenames.txt"));
+            BufferedReader fileReader = new BufferedReader(new FileReader("splits.txt"));
             // Create and submit tasks to the thread pool
             for (int i = 0; i < thread_count; i++) {
                 ArrayList<String> tmp = new ArrayList<>();

@@ -1,3 +1,5 @@
 *.wet
 *.txt
 Files/*.wet
+CC*
+*.class
