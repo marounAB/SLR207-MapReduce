@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
 public class SimpleClient {
-    static final ArrayList<String> serverHosts = new ArrayList<>(Arrays.asList("tp-1a201-04.enst.fr", "tp-1a201-01.enst.fr", "tp-1a201-02.enst.fr", "tp-1a201-03.enst.fr", "tp-1a201-05.enst.fr", "tp-1a201-06.enst.fr", "tp-1a201-08.enst.fr", "tp-1a201-09.enst.fr", "tp-1a201-10.enst.fr", "tp-1a201-11.enst.fr", "tp-1a201-12.enst.fr", "tp-1a201-13.enst.fr"));
+    static final ArrayList<String> serverHosts = new ArrayList<>(Arrays.asList("tp-1a201-04.enst.fr", "tp-1a201-14.enst.fr", "tp-1a201-24.enst.fr", "tp-1a201-03.enst.fr")); //, "tp-1a201-05.enst.fr", "tp-1a201-06.enst.fr")); //, "tp-1a201-08.enst.fr", "tp-1a201-09.enst.fr", "tp-1a201-10.enst.fr", "tp-1a201-11.enst.fr", "tp-1a201-12.enst.fr", "tp-1a201-13.enst.fr"));
     // static final ArrayList<String> serverHosts = new ArrayList<>(Arrays.asList("tp-3a101-01.enst.fr", "tp-3a101-10.enst.fr", "tp-3a107-05.enst.fr", "tp-3a107-13.enst.fr", "tp-3a107-14.enst.fr")); //, "tp-t309-00.enst.fr", "tp-t309-01.enst.fr", "tp-t309-02.enst.fr", "tp-t309-03.enst.fr"));
 
     static Map<String, Integer> wordCounts = new ConcurrentHashMap<>();
@@ -29,10 +29,12 @@ public class SimpleClient {
     static ArrayList<BufferedReader> readers = new ArrayList<>();
     static ArrayList<PrintWriter> writers = new ArrayList<>();
     static ArrayList<BufferedOutputStream> bwriters = new ArrayList<>();
+    static long startTime;
     static int port = 9990;
     public static void main(String[] args) throws FileNotFoundException, IOException {
         // Server Host
 
+        startTime = System.currentTimeMillis();
         try {
             String serverNames = String.join(" ", serverHosts);
             for(int i=0; i<serverHosts.size(); ++i) {
@@ -77,7 +79,9 @@ public class SimpleClient {
             // Create and submit tasks to the thread pool
             for (int i = 0; i < thread_count; i++) {
                 ArrayList<String> tmp = new ArrayList<>();
-                tmp.add(fileReader.readLine());
+                for(int j=0; j<12/thread_count; ++j) {
+                    tmp.add(fileReader.readLine());
+                }
                 // int linesToRead = linesPerThread + (i == thread_count-1 ? remainingLines : 0);
                 executor.submit(new FileReaderTask(tmp, i));
             }
@@ -112,7 +116,8 @@ public class SimpleClient {
                 gatherers.get(i).join();
             }
 
-            System.out.println("Count Complete");
+            long endTime = System.currentTimeMillis();
+            System.out.println("Count Complete in " + (endTime - startTime) + " ms");
 
             Map<String, Integer> sortedWordCounts = new TreeMap<>(
                     Comparator.<String, Integer>comparing(wordCounts::get).reversed()
@@ -186,7 +191,7 @@ public class SimpleClient {
                 // boolean connected = false;
                 sockets.set(server, null);
                 Thread.sleep(5000);
-                // while (sockets.get(server) == null) {
+                while (sockets.get(server) == null) {
                     try {
                         sockets.set(server, new Socket(serverHosts.get(server), port));
                         readers.set(server, new BufferedReader(new InputStreamReader(sockets.get(server).getInputStream())));
@@ -194,10 +199,10 @@ public class SimpleClient {
                         // connected = true;
                     }
                     catch (Exception e) {
-                        // Thread.sleep(1000);
+                        Thread.sleep(1000);
                     }
                     
-                // }
+                }
                 System.out.println("ba3at l " + server);
             } catch (IOException e) {
                 e.printStackTrace();

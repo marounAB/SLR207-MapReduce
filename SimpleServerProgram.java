@@ -172,7 +172,11 @@ public class SimpleServerProgram {
             words = null;
             System.out.println("DONE ASSEMBLING");
             for(int i=0; i<n; ++i) {
-                writers.get(i).println(String.join(" ", data.get(i)));
+                for(int j=0; j<data.size()-1; ++j) {
+                    writers.get(i).print(data.get(j) + " ");
+                }
+                writers.get(i).println(data.get(data.size()-1));
+                // writers.get(i).println(String.join(" ", data.get(i)));
             }
             System.out.println("DONE SENDING");
 
@@ -275,7 +279,11 @@ public class SimpleServerProgram {
                         done = true;
                     }
                     else {
-                        mywords.addAll(new ArrayList(Arrays.asList(word.split(" "))));
+                        String [] tmp = word.split(" ");
+                        for(int j=0; j<tmp.length; ++j) {
+                            mywords.add(tmp[j]);
+                        }
+                        // mywords.addAll(new ArrayList(Arrays.asList(word.split(" "))));
                     }
                 }
                 System.out.println("done getting my words");
