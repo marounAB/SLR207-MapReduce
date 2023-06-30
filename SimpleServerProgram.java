@@ -180,9 +180,9 @@ public class SimpleServerProgram {
             }
             System.out.println("DONE SENDING");
 
-            for(int i=0; i<serverNames.size(); ++i) {
-                writers.get(i).println("DONE SHUFFLING");
-            }
+            // for(int i=0; i<serverNames.size(); ++i) {
+            //     writers.get(i).println("DONE SHUFFLING");
+            // }
 
             recieverFactory.join();
 
@@ -193,7 +193,8 @@ public class SimpleServerProgram {
             for (Map.Entry<String, Integer> entry : wordCount.entrySet()) {
                 os.println(entry.getKey() + " " + entry.getValue());
             }
-            os.println("QUIT");
+            os.close();
+            // os.println("QUIT");
 
             // for(int i=0; i<serverSockets.size(); ++i) {
             //     writers.get(i).close();
@@ -267,25 +268,25 @@ public class SimpleServerProgram {
         public void run() {
             try {
                 System.out.println("before opening reader");
-                boolean done = false;
-                long c = 0;
-                while (!done) {
+                // boolean done = false;
+                // long c = 0;
+                // while (!done) {
                     String word;
                     word = tmpReaders.get(id).readLine();
                     // if (c%100 == 0) {
                     //     System.out.println("100 recieved");
                     // }
-                    if (word.equals("DONE SHUFFLING")) {
-                        done = true;
-                    }
-                    else {
+                    // if (word.equals("DONE SHUFFLING")) {
+                    //     done = true;
+                    // }
+                    // else {
                         // String [] tmp = word.split(" ");
                         // for(int j=0; j<tmp.length; ++j) {
                         //     mywords.add(tmp[j]);
                         // }
                         mywords.addAll(new ArrayList(Arrays.asList(word.split(" "))));
-                    }
-                }
+                    // }
+                // }
                 System.out.println("done getting my words");
                 // reader.close();
                 // socket.close();

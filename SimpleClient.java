@@ -35,7 +35,6 @@ public class SimpleClient {
     public static void main(String[] args) throws FileNotFoundException, IOException {
         // Server Host
 
-        startTime = System.currentTimeMillis();
         try {
             BufferedReader br = new BufferedReader(new FileReader("machines.txt"));
             String machine;
@@ -43,7 +42,7 @@ public class SimpleClient {
                 serverHosts.add(machine);
             }
             br.close();
-
+            
             String serverNames = String.join(" ", serverHosts);
             for(int i=0; i<serverHosts.size(); ++i) {
                 sockets.add(new Socket(serverHosts.get(i), port));
@@ -56,33 +55,33 @@ public class SimpleClient {
         catch (Exception e) {
             e.printStackTrace();
         }
-
+        
         int thread_count = serverHosts.size();
         // String filename = "CC-MAIN-20220116093137-20220116123137-00001.warc.wet";
         String filename = "./Files/file1.wet";
         File file = new File(filename);
-
+        
         ExecutorService executor = Executors.newFixedThreadPool(thread_count);
-
+        
         try (FileChannel fileChannel = new RandomAccessFile(file, "r").getChannel()) {
             // long fileSize = fileChannel.size();
-
+            
             // // Memory-map the file for reading
             // MappedByteBuffer buffer = fileChannel.map(FileChannel.MapMode.READ_ONLY, 0, fileSize);
-
+            
             // // Create a byte array to hold the file data
             // byte[] fileBytes = new byte[(int) fileSize];
-
+            
             // // Transfer the data from the buffer to the byte array
             // buffer.get(fileBytes);
-
+            
             // Determine the number of lines in the file
             // int numLines = fileBytes.length;
-
+            
             // // Calculate the number of lines to be read by each thread
             // int linesPerThread = numLines / thread_count;
             // int remainingLines = numLines % thread_count;
-
+            
             BufferedReader fileReader = new BufferedReader(new FileReader("splits.txt"));
             // Create and submit tasks to the thread pool
             for (int i = 0; i < thread_count; i++) {
@@ -93,13 +92,15 @@ public class SimpleClient {
                 // int linesToRead = linesPerThread + (i == thread_count-1 ? remainingLines : 0);
                 executor.submit(new FileReaderTask(tmp, i));
             }
-
+            
             // Shutdown the executor and wait for all tasks to complete
             executor.shutdown();
             while (!executor.isTerminated()) {
                 // Wait for all tasks to complete
             }
-
+            
+            startTime = System.currentTimeMillis();
+            
             System.out.println("raddo l chabeb");
 
             for(int i=0; i<serverHosts.size(); ++i) {
@@ -231,18 +232,29 @@ public class SimpleClient {
         @Override
         public void run() {
             try {
-                boolean done = false;
                 String word;
-                while (!done) {
-                    word = readers.get(id).readLine();
-                    if (word.equals("QUIT")) {
-                        done = true;
-                    }
-                    else {
-                        String[] tmp = word.split(" ");
-                        wordCounts.put(tmp[0], Integer.parseInt(tmp[1]));
-                    }
+                while ((word = readers.get(id).readLine()) != null) {
+                    // word = readers.get(id).readLine();
+                    // if (word.equals("QUIT")) {
+                    //     done = true;
+                    // }
+                    // else {
+                    String[] tmp = word.split(" ");
+                    wordCounts.put(tmp[0], Integer.parseInt(tmp[1]));
+                    // }
                 }
+                // boolean done = false;
+                // String word;
+                // while (!done) {
+                //     word = readers.get(id).readLine();
+                //     if (word.equals("QUIT")) {
+                //         done = true;
+                //     }
+                //     else {
+                //         String[] tmp = word.split(" ");
+                //         wordCounts.put(tmp[0], Integer.parseInt(tmp[1]));
+                //     }
+                // }
             }
             catch (Exception e) {
                 e.printStackTrace();
