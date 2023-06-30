@@ -18,9 +18,7 @@ import java.util.stream.IntStream;
 
 public class SimpleClient {
     static final ArrayList<String> serverHosts = new ArrayList<>();
-    // static final ArrayList<String> serverHosts = new ArrayList<>(Arrays.asList("tp-1a201-04.enst.fr", "tp-1a201-14.enst.fr", "tp-1a201-24.enst.fr", "tp-1a201-03.enst.fr", "tp-1a201-05.enst.fr", "tp-1a201-06.enst.fr", "tp-1a201-08.enst.fr", "tp-1a201-09.enst.fr", "tp-1a201-10.enst.fr", "tp-1a201-11.enst.fr", "tp-1a201-12.enst.fr", "tp-1a201-13.enst.fr"));
-    // static final ArrayList<String> serverHosts = new ArrayList<>(Arrays.asList("tp-3a101-01.enst.fr", "tp-3a101-10.enst.fr", "tp-3a107-05.enst.fr", "tp-3a107-13.enst.fr", "tp-3a107-14.enst.fr")); //, "tp-t309-00.enst.fr", "tp-t309-01.enst.fr", "tp-t309-02.enst.fr", "tp-t309-03.enst.fr"));
-
+    
     static Map<String, Integer> wordCounts = new ConcurrentHashMap<>();
 
     static Socket socketOfClient = null;
@@ -57,30 +55,10 @@ public class SimpleClient {
         }
         
         int thread_count = serverHosts.size();
-        // String filename = "CC-MAIN-20220116093137-20220116123137-00001.warc.wet";
-        String filename = "./Files/file1.wet";
-        File file = new File(filename);
         
         ExecutorService executor = Executors.newFixedThreadPool(thread_count);
         
-        try (FileChannel fileChannel = new RandomAccessFile(file, "r").getChannel()) {
-            // long fileSize = fileChannel.size();
-            
-            // // Memory-map the file for reading
-            // MappedByteBuffer buffer = fileChannel.map(FileChannel.MapMode.READ_ONLY, 0, fileSize);
-            
-            // // Create a byte array to hold the file data
-            // byte[] fileBytes = new byte[(int) fileSize];
-            
-            // // Transfer the data from the buffer to the byte array
-            // buffer.get(fileBytes);
-            
-            // Determine the number of lines in the file
-            // int numLines = fileBytes.length;
-            
-            // // Calculate the number of lines to be read by each thread
-            // int linesPerThread = numLines / thread_count;
-            // int remainingLines = numLines % thread_count;
+        try {
             
             BufferedReader fileReader = new BufferedReader(new FileReader("splits.txt"));
             // Create and submit tasks to the thread pool
@@ -98,10 +76,10 @@ public class SimpleClient {
             while (!executor.isTerminated()) {
                 // Wait for all tasks to complete
             }
-            
+
             startTime = System.currentTimeMillis();
-            
-            System.out.println("raddo l chabeb");
+
+            System.out.println("all sent");
 
             for(int i=0; i<serverHosts.size(); ++i) {
                 String line = readers.get(i).readLine();
@@ -193,11 +171,8 @@ public class SimpleClient {
                     }
                 }
                 bwriters.get(server).flush();
-                // writers.get(server).println();
-                // writers.get(server).println("QUIT MAPPING");
                 writers.get(server).close();
                 bwriters.get(server).close();
-                // boolean connected = false;
                 sockets.set(server, null);
                 Thread.sleep(5000);
                 while (sockets.get(server) == null) {
@@ -212,7 +187,7 @@ public class SimpleClient {
                     }
                     
                 }
-                System.out.println("ba3at l " + server);
+                System.out.println("sent to " + server);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -234,27 +209,9 @@ public class SimpleClient {
             try {
                 String word;
                 while ((word = readers.get(id).readLine()) != null) {
-                    // word = readers.get(id).readLine();
-                    // if (word.equals("QUIT")) {
-                    //     done = true;
-                    // }
-                    // else {
                     String[] tmp = word.split(" ");
                     wordCounts.put(tmp[0], Integer.parseInt(tmp[1]));
-                    // }
                 }
-                // boolean done = false;
-                // String word;
-                // while (!done) {
-                //     word = readers.get(id).readLine();
-                //     if (word.equals("QUIT")) {
-                //         done = true;
-                //     }
-                //     else {
-                //         String[] tmp = word.split(" ");
-                //         wordCounts.put(tmp[0], Integer.parseInt(tmp[1]));
-                //     }
-                // }
             }
             catch (Exception e) {
                 e.printStackTrace();

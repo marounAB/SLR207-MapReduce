@@ -20,8 +20,6 @@ for file in "${input_files[@]}"; do
 
   # Split the file into two parts
   split -n 2 "$file" "$output_directory/$filename"
-
-  # Append the new file names to the output text file
-  echo "$output_directory/$filename"aa >> "$output_file"
-  echo "$output_directory/$filename"ab >> "$output_file"
 done
+
+ls -d $output_directory/* | tr " " "\n" > $output_file

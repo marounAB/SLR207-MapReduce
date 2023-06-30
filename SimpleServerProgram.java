@@ -91,20 +91,20 @@ public class SimpleServerProgram {
             byte[] buffer = new byte[8912];
             int bytesRead;
             int numBytes = 0;
-            System.out.println("ballach recieve");
+            System.out.println("started recieve");
             while ((bytesRead = inputStream.read(buffer)) != -1) {
                 numBytes += bytesRead;
                 outputStream.write(buffer, 0, bytesRead);
             }
             
-            // Thread.sleep(10000);
 
             is = new BufferedReader(new InputStreamReader(socketOfServer.getInputStream()));
             inputStream = socketOfServer.getInputStream();
 
             System.out.println(numBytes);
 
-            System.out.println("5alast recieve");
+            System.out.println("done recieve");
+
             // Transform the received binary data into a string
             String receivedString = new String(outputStream.toByteArray(), StandardCharsets.UTF_8);
             String[] lines = receivedString.split("\\r?\\n");
@@ -116,33 +116,22 @@ public class SimpleServerProgram {
                 String[] tmp = line1.split("\\s+");
                 for (String word : tmp) {
                     words.add(word);
-                    // writer.println(word);
                 }
             }
             
             lines = null;
 
-            // socketOfServer = listener.accept();
-            // System.out.println("Accept a client!");
-            
-            // // Open input and output streams
-            // is = new BufferedReader(new InputStreamReader(socketOfServer.getInputStream()));
-            // inputStream = socketOfServer.getInputStream();
-            // os = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socketOfServer.getOutputStream())), true);
-            
             thread.join();
             // Open input and output streams
             is = new BufferedReader(new InputStreamReader(newSocket[0].getInputStream()));
             inputStream = newSocket[0].getInputStream();
             os = new PrintWriter(new BufferedWriter(new OutputStreamWriter(newSocket[0].getOutputStream())), true);
-            // PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter("results.txt")), true);
             
             RecieverFactory recieverFactory = new RecieverFactory(listener[0]);
             recieverFactory.start();
             
             os.println("DONE MAPPING");
             String startShuffle;
-            // while ((startShuffle = is.readLine()) == null) {}
             while (!(startShuffle = is.readLine()).equals("SHUFFLE")) {}
             System.out.println(startShuffle + " to start shuffle");
 
@@ -166,23 +155,14 @@ public class SimpleServerProgram {
             for(int i=0; i<words.size(); ++i) {
                 int j = words.get(i).hashCode()%n;
                 int tosend = (j>=0)?j:(n+j);
-                // writers.get(tosend).println(words.get(i));
                 data.get(tosend).add(words.get(i));
             }
             words = null;
             System.out.println("DONE ASSEMBLING");
             for(int i=0; i<n; ++i) {
-                // for(int j=0; j<data.size()-1; ++j) {
-                //     writers.get(i).print(data.get(j) + " ");
-                // }
-                // writers.get(i).println(data.get(data.size()-1));
                 writers.get(i).println(String.join(" ", data.get(i)));
             }
             System.out.println("DONE SENDING");
-
-            // for(int i=0; i<serverNames.size(); ++i) {
-            //     writers.get(i).println("DONE SHUFFLING");
-            // }
 
             recieverFactory.join();
 
@@ -193,18 +173,7 @@ public class SimpleServerProgram {
             for (Map.Entry<String, Integer> entry : wordCount.entrySet()) {
                 os.println(entry.getKey() + " " + entry.getValue());
             }
-            os.close();
-            // os.println("QUIT");
-
-            // for(int i=0; i<serverSockets.size(); ++i) {
-            //     writers.get(i).close();
-            //     readers.get(i).close();
-            //     serverSockets.get(i).close();
-            // }
-            // os.close();
-            // is.close();
-            // listener.close();
-            // socketOfServer.close();
+            os.close();;
 
         } catch (Exception e) {
             System.out.println(e);
@@ -222,7 +191,6 @@ public class SimpleServerProgram {
 
         @Override
         public void run() {
-            // ExecutorService executor = Executors.newFixedThreadPool(serverNames.size());
             System.out.println("opened server socket");
             ArrayList<Thread> tmp = new ArrayList<>();
             for(int i=0; i<serverNames.size(); ++i) {
@@ -230,24 +198,18 @@ public class SimpleServerProgram {
                     tmpSockets.add(serverSocket.accept());
                     tmpReaders.add(new BufferedReader(new InputStreamReader(tmpSockets.get(i).getInputStream())));
                     System.out.println("started socket " + i);
-                    // executor.submit(new Reciever(i, socket));
                     tmp.add(new Reciever(i));
                     tmp.get(i).start();
 
                 } catch (IOException e) {
                     // TODO Auto-generated catch block
                     System.out.println("error with socket " +i);
-                    // e.printStackTrace();
                 }
             }
-            try {
-                // executor.shutdown();
-                // while (!executor.isTerminated()) {
-                //     // Wait for all tasks to complete
-                // }    
+            try { 
                 for(int i=0; i<tmp.size(); ++i) {
                     tmp.get(i).join();
-                    System.out.println(i+ "terminated");
+                    System.out.println(i+ " terminated");
                 }
             }
             catch (Exception e) {
@@ -268,32 +230,15 @@ public class SimpleServerProgram {
         public void run() {
             try {
                 System.out.println("before opening reader");
-                // boolean done = false;
-                // long c = 0;
-                // while (!done) {
-                    String word;
-                    word = tmpReaders.get(id).readLine();
-                    // if (c%100 == 0) {
-                    //     System.out.println("100 recieved");
-                    // }
-                    // if (word.equals("DONE SHUFFLING")) {
-                    //     done = true;
-                    // }
-                    // else {
-                        // String [] tmp = word.split(" ");
-                        // for(int j=0; j<tmp.length; ++j) {
-                        //     mywords.add(tmp[j]);
-                        // }
-                        mywords.addAll(new ArrayList(Arrays.asList(word.split(" "))));
-                    // }
-                // }
+                String word;
+                word = tmpReaders.get(id).readLine();
+                if (word != null) {
+                    mywords.addAll(new ArrayList(Arrays.asList(word.split(" "))));
+                }
                 System.out.println("done getting my words");
-                // reader.close();
-                // socket.close();
             } catch (IOException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
-                // System.out.println("error while reading my words");
             }
         }
     }
